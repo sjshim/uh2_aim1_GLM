@@ -1,1 +1,5 @@
 /log/
+/.ipynb_checkpoints/
+*/__pycache__/
+analyze_lev2_SJ.py
+make_lev2_batch_files_no_rt.batch

@@ -20,7 +20,6 @@ def get_confounds_aroma_nonaggr_data(confounds_file):
       confound_regressors: includes WM, CSF, dummies to model nonsteady volumes
                            as they are not smoothed, cosine basis set (req with
                            AROMA use)
-                           SJ running version: motion regressors
       percent_high_motion:  Percentage of high motion time points.  High motion
                             is defined by the following
                             FD>.5, stdDVARS>1.2 (that relates to DVARS>.5)
@@ -31,7 +30,9 @@ def get_confounds_aroma_nonaggr_data(confounds_file):
                          (confounds_df.std_dvars > 1.2)
     percent_high_motion = np.mean(excessive_movement)
 
-    #confounds = confounds_df.filter(regex='non_steady|cosine|^csf$|^white_matter$').copy()
+    confounds = confounds_df.filter(regex='non_steady|cosine|^csf$|^white_matter$').copy()
+
+    #something like the following could be used for motion regressors?
     # confounds = confounds_df.filter(regex='non_steady|cosine|framewise_displacement' 
     #                                 '|trans_x$|trans_x_derivative1$|trans_x_power2$|trans_x_derivative1_power2$'
     #                                 '|trans_y$|trans_y_derivative1$|trans_y_power2$|trans_y_derivative1_power2$'
@@ -39,7 +40,6 @@ def get_confounds_aroma_nonaggr_data(confounds_file):
     #                                 '|rot_x$|rot_x_derivative1$|rot_x_power2$|rot_x_derivative1_power2$'
     #                                 '|rot_y$|rot_y_derivative1$|rot_y_power2$|rot_y_derivative1_power2$'
     #                                 '|rot_z$|rot_z_derivative1$|rot_z_power2$|rot_z_derivative1_power2$').copy()
-    confounds = confounds_df.filter(regex='non_steady|cosine').copy()
     return confounds, percent_high_motion
 
 
@@ -222,7 +222,7 @@ if __name__ == "__main__":
         add_deriv = 'deriv_yes'
     
     outdir = (f'/oak/stanford/groups/russpold/data/uh2/aim1/BIDS/derivatives/'
-        f'output_CSF-no_motion-no/{task}_lev1_output/')
+        f'output/{task}_lev1_output/')
     root = '/oak/stanford/groups/russpold/data/uh2/aim1/BIDS'
     contrast_dir = (f'{outdir}/task_{task}_rtmodel_{regress_rt}')
     if not os.path.exists(contrast_dir):
