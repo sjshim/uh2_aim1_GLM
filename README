@@ -1,0 +1,20 @@
+How to use these scripts!
+
+Level 1 analyses
+1. Use make_lev1_batch_files.py to generate the level 1 batch files.  Importantly, you should run with the --qa_only flag *first*.  Do the QA and then rerun this script without the --qa_only flag.  Doing so will overwrite the initial batch files.
+2. Run launch_all_lev1_sherloch.sh to run all of the level 1 analysis.  First do this for where the --qa_only flag was used then repeat steps 1 and 2 without the --qa_only flag
+3. Use check_lev1_output.py to verify all expected output files were created.  They should be there, but if time ran out on sherlock or other issues, you'll need to trouble shoot i
+
+Level 2 analyses
+1. You first must define what contrasts you're interested in analyzing and what models you'd like to run.  If you simply type analyze_lev2.py --help (and patiently wait) it spits out all possible level 1 contrasts that you can use.  You also need to figure out what your group level model is.
+Note:  If you only want a group mean, adding confounds to this analysis is POINTLESS.  Just run a group average.  Confounds only make a difference in between-subject analyses (group comparisons or relationships with continuous covariates).  I noticed you did this previously, but please skip it here, it is not necessary and doesn't make sense to do so, statisically (you cannot 'adjust' a single mean for confounds)
+Set your models in make_lev2_batch_files.batch, following the examples I have in there.
+
+2. QA the level 2s.  The QA files will be present after you ran the above batch script, but the randomise jobs have not been run yet.  Make sure the QA is good before proceeding.
+
+3. Run launch_all_lev2_sherlock.sh.  This runs ALL batch files that it can find.  If you only need to run specific jobs, then adapt to this (I typically just go into the directory and run sbatch directly if it is just 1 or 2 models)
+
+Done.
+
+
+
