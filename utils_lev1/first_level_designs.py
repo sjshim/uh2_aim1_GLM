@@ -51,6 +51,7 @@ def make_regressor_and_derivative(n_scans, tr, events_df, add_deriv,
     if duration_column not in events_df.columns:
         print("must specify duration column that exists in events_df")
         return
+
     reg_3col = events_df.query(subset)[[onset_column, duration_column, amplitude_column]]
     reg_3col = reg_3col.rename(
         columns={duration_column: "duration",
@@ -62,21 +63,22 @@ def make_regressor_and_derivative(n_scans, tr, events_df, add_deriv,
         hrf_model = 'spm + derivative'
     else:
         hrf_model= 'spm'
-        
+    
     regressor_array, regressor_names = compute_regressor(
         np.transpose(np.array(reg_3col)),
         hrf_model,
+        #this deals with fmriprep slice timing setting
         np.arange(n_scans)*tr+tr/2,
         con_id=cond_id
     ) 
     regressors =  pd.DataFrame(regressor_array, columns=regressor_names)  
-    return regressors
+    return regressors, reg_3col
 
 
 def define_nuisance_trials(events_df, task):
     """
     Splits junk trials into omission, commission and too_fast, with the exception
-    of twoByTwo where too_fast alsoo includes first trial of block
+    of twoByTwo where too_fast also includes first trial of block
     Note, these categories do not apply to WATT3 or CCTHot
     inputs: 
         events_df: the pandas events data frame
@@ -84,12 +86,19 @@ def define_nuisance_trials(events_df, task):
     output:
         too_fast, omission, commission: indicators for each junk trial type
     """
-    if task in ['ANT', 'DPX', 'stroop']:
+    if task in ['DPX', 'stroop']:
         omission = (events_df.key_press == -1)
         commission = ((events_df.key_press != events_df.correct_response) &
                       (events_df.key_press != -1) &
                       (events_df.response_time >= .2))
         too_fast = (events_df.response_time < .2) 
+    if task in ['ANT']:
+        omission = ((events_df.key_press == -1) & (events_df.trial_id == 'stim'))
+        commission = ((events_df.key_press != events_df.correct_response) &
+                    (events_df.key_press != -1) &
+                    (events_df.response_time >= .2) &
+                    (events_df.trial_id == 'stim'))
+        too_fast = ((events_df.response_time < .2) & (events_df.trial_id == 'stim'))
     if task in ['twoByTwo']:
         omission = (events_df.key_press == -1)
         commission = ((events_df.key_press != events_df.correct_response) &
@@ -126,6 +135,20 @@ def define_nuisance_trials(events_df, task):
     percent_junk = np.mean(omission | commission | too_fast)
     return events_df, percent_junk
 
+def rename_columns(df, prefix):
+    onset_column = 'onset' if 'onset' in df.columns else 'button_onset'
+    renamed_columns = {}
+    for col in df.columns:
+        if col == onset_column:
+            renamed_columns[col] = f"{prefix}_{onset_column}"
+        else:
+            renamed_columns[col] = f"{prefix}_{col}"
+    return df.rename(columns=renamed_columns)
+
+def merge_dataframes(df1, df2, prefix1, prefix2):
+    onset_col_1 = f"{prefix1}_onset" if f"{prefix1}_onset" in df1.columns else f"{prefix1}_button_onset"
+    onset_col_2 = f"{prefix2}_onset" if f"{prefix2}_onset" in df2.columns else f"{prefix2}_button_onset"
+    return df1.merge(df2, left_on=onset_col_1, right_on=onset_col_2, how='outer')
 
 def make_basic_stroop_desmat(
     events_file, add_deriv, regress_rt, n_scans, tr, 
@@ -152,33 +175,48 @@ def make_basic_stroop_desmat(
     events_df.loc[events_df.trial_type == 'congruent', 'congruent'] = 1
     subset_main_regressors = 'too_fast == 0 and commission == 0 and omission == 0 and onset > 0' 
 
-    too_fast_regressor = make_regressor_and_derivative(
+    too_fast_regressor, too_fast_3col = make_regressor_and_derivative(
             n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
             amplitude_column="too_fast", duration_column="constant_1_column",
             subset='onset > 0', demean_amp = False, cond_id = 'too_fast'
         )
-    omission_regressor = make_regressor_and_derivative(
+    omission_regressor, omission_3col = make_regressor_and_derivative(
             n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
             amplitude_column="omission", duration_column="constant_1_column",
             subset='onset > 0', demean_amp = False, cond_id = 'omission'
         )
-    commission_regressor = make_regressor_and_derivative(
+    commission_regressor, commission_3col = make_regressor_and_derivative(
             n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
             amplitude_column="commission", duration_column="constant_1_column",
             subset='onset > 0', demean_amp = False, cond_id = 'commission'
         )
-    congruent = make_regressor_and_derivative(
+    congruent, congruent_3col = make_regressor_and_derivative(
         n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
         amplitude_column="congruent", duration_column="constant_1_column",
         subset=subset_main_regressors, demean_amp=False, cond_id ='congruent'
     )
-    incongruent = make_regressor_and_derivative(
+    incongruent, incongruent_3col = make_regressor_and_derivative(
         n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
         amplitude_column="incongruent", duration_column="constant_1_column",
         subset=subset_main_regressors, demean_amp=False, cond_id='incongruent'
     )
     design_matrix = pd.concat([congruent, incongruent,
         too_fast_regressor, omission_regressor, commission_regressor, confound_regressors], axis=1)
+    
+    too_fast_3col = rename_columns(too_fast_3col, 'too_fast')
+    omission_3col = rename_columns(omission_3col, 'omission')
+    commission_3col = rename_columns(commission_3col, 'commission')
+    congruent_3col = rename_columns(congruent_3col, 'congruent')
+    incongruent_3col = rename_columns(incongruent_3col, 'incongruent')
+
+    design_matrix_3col = merge_dataframes(congruent_3col, incongruent_3col, 'congruent', 'incongruent')
+    design_matrix_3col = merge_dataframes(design_matrix_3col, too_fast_3col, 'congruent', 'too_fast')
+    design_matrix_3col = merge_dataframes(design_matrix_3col, omission_3col, 'congruent', 'omission')
+    design_matrix_3col = merge_dataframes(design_matrix_3col, commission_3col, 'congruent', 'commission')
+
+    # Optionally, sort the resulting dataframe by 'all_task_onset' for better clarity
+    design_matrix_3col.sort_values(by='congruent_onset', inplace=True)
+
     contrasts = {
         "stroop_incong_minus_cong": "incongruent - congruent",
         "stroop_cong_v_baseline": "congruent",
@@ -203,7 +241,7 @@ def make_basic_stroop_desmat(
         ) 
         design_matrix = pd.concat([design_matrix, rt], axis=1)
         contrasts["response_time"] = "response_time"
-    return design_matrix, contrasts, percent_junk, events_df
+    return design_matrix, contrasts, percent_junk, design_matrix_3col
 
 def make_basic_ant_desmat(events_file, add_deriv,
     regress_rt, n_scans, tr, confound_regressors
@@ -220,11 +258,14 @@ def make_basic_ant_desmat(events_file, add_deriv,
           rt_subset: Boolean for extracting correct rows of events_df in the case that 
               rt regressors are requeset.
     """
+    # stick cue regressors (onset: cue onset, duration: 0.5) at the beginning of each trial
+    # stick probe regressors (onset: stim onset, duration: 1) at the end of each trial
     events_df = pd.read_csv(events_file, sep = '\t')
     events_df, percent_junk = define_nuisance_trials(events_df, 'ANT')
     subset_main_regressors = ('too_fast == 0 and commission == 0'
-                              'and omission == 0 and onset > 0') 
+                              'and omission == 0 and onset > 0 and trial_id == "stim"') 
     events_df['constant_1_column'] = 1
+    events_df['constant_0.5_column'] = 0.5
 
     events_df['cue_parametric'] = 0
     events_df.loc[events_df.cue == 'double', 'cue_parametric'] = 1
@@ -235,69 +276,185 @@ def make_basic_ant_desmat(events_file, add_deriv,
     events_df.loc[events_df.flanker_type == 'congruent', 'congruency_parametric'] = -1
 
     events_df['cue_congruency_interaction'] = events_df.cue_parametric.values *\
-                                              events_df.congruency_parametric.values
-    too_fast_regressor = make_regressor_and_derivative(
+                                              events_df.congruency_parametric.values 
+    events_df['next_flanker_type'] = events_df['flanker_type'].shift(-1)
+    events_df['previous_cue_type'] = events_df['cue'].shift(1) 
+
+    too_fast_regressor, too_fast_3col = make_regressor_and_derivative(
             n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
             amplitude_column="too_fast", duration_column="constant_1_column",
-            subset="onset > 0", demean_amp = False, cond_id = 'too_fast'
+            subset="onset > 0 and trial_id == 'stim'", demean_amp = False, cond_id = 'too_fast'
         )
-    omission_regressor = make_regressor_and_derivative(
+    omission_regressor, omission_3col = make_regressor_and_derivative(
             n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
             amplitude_column="omission", duration_column="constant_1_column",
-            subset="onset > 0", demean_amp = False, cond_id = 'omission'
+            subset="onset > 0 and trial_id == 'stim'", demean_amp = False, cond_id = 'omission'
         )
-    commission_regressor = make_regressor_and_derivative(
+    commission_regressor, commission_3col = make_regressor_and_derivative(
             n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
             amplitude_column="commission", duration_column="constant_1_column",
-            subset="onset > 0", demean_amp = False, cond_id = 'commission'
+            subset="onset > 0 and trial_id == 'stim'", demean_amp = False, cond_id = 'commission'
         )
-    cue_parametric = make_regressor_and_derivative(
-        n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
-        amplitude_column="cue_parametric", duration_column="constant_1_column",
-        subset=subset_main_regressors, demean_amp = True, cond_id = 'cue_parametric'
+    cue_double_congruent, cue_double_congruent_3col = make_regressor_and_derivative(
+        n_scans=n_scans, tr=tr, events_df=events_df, add_deriv=add_deriv,
+        amplitude_column="constant_1_column", duration_column="constant_0.5_column",
+        subset="onset > 0 and cue == 'double' and next_flanker_type == 'congruent'",
+        demean_amp=False, cond_id='cue_double_congruent'
     )
-    congruency_parametric = make_regressor_and_derivative(
-        n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
-        amplitude_column="congruency_parametric", duration_column="constant_1_column",
-        subset=subset_main_regressors, demean_amp=True, cond_id='congruency_parametric'
+    cue_double_incongruent, cue_double_incongruent_3col = make_regressor_and_derivative(
+        n_scans=n_scans, tr=tr, events_df=events_df, add_deriv=add_deriv,
+        amplitude_column="constant_1_column", duration_column="constant_0.5_column",
+        subset="onset > 0 and cue == 'double' and next_flanker_type == 'incongruent'",
+        demean_amp=False, cond_id='cue_double_incongruent'
     )
-    cue_congruency_interaction = make_regressor_and_derivative(
-        n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
-        amplitude_column="cue_congruency_interaction", duration_column="constant_1_column",
-        subset=subset_main_regressors, demean_amp=True, cond_id='interaction'
+    cue_spatial_congruent, cue_spatial_congruent_3col = make_regressor_and_derivative(
+        n_scans=n_scans, tr=tr, events_df=events_df, add_deriv=add_deriv,
+        amplitude_column="constant_1_column", duration_column="constant_0.5_column",
+        subset="onset > 0 and cue == 'spatial' and next_flanker_type == 'congruent'",
+        demean_amp=False, cond_id='cue_spatial_congruent'
     )
-    all_trials = make_regressor_and_derivative(
-        n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
+    cue_spatial_incongruent, cue_spatial_incongruent_3col = make_regressor_and_derivative(
+        n_scans=n_scans, tr=tr, events_df=events_df, add_deriv=add_deriv,
+        amplitude_column="constant_1_column", duration_column="constant_0.5_column",
+        subset="onset > 0 and cue == 'spatial' and next_flanker_type == 'incongruent'",
+        demean_amp=False, cond_id='cue_spatial_incongruent'
+    )
+    probe_double_congruent, probe_double_congruent_3col = make_regressor_and_derivative(
+        n_scans=n_scans, tr=tr, events_df=events_df, add_deriv=add_deriv,
         amplitude_column="constant_1_column", duration_column="constant_1_column",
-        subset=subset_main_regressors, demean_amp=False, cond_id='task'
+        subset="onset > 0 and previous_cue_type == 'double' and flanker_type == 'congruent'",
+        demean_amp=False, cond_id='probe_double_congruent'
     )
-    design_matrix = pd.concat([cue_parametric, congruency_parametric,
-        cue_congruency_interaction, all_trials, too_fast_regressor, omission_regressor,
-        commission_regressor, confound_regressors], axis=1)
-    contrasts = {'cue_parametric': 'cue_parametric',
-                'congruency_parametric': 'congruency_parametric',
-                'interaction': 'interaction',
-                'task': 'task'
+    probe_double_incongruent, probe_double_incongruent_3col = make_regressor_and_derivative(
+        n_scans=n_scans, tr=tr, events_df=events_df, add_deriv=add_deriv,
+        amplitude_column="constant_1_column", duration_column="constant_1_column",
+        subset="onset > 0 and previous_cue_type == 'double' and flanker_type == 'incongruent'",
+        demean_amp=False, cond_id='probe_double_incongruent'
+    )
+    probe_spatial_congruent, probe_spatial_congruent_3col = make_regressor_and_derivative(
+        n_scans=n_scans, tr=tr, events_df=events_df, add_deriv=add_deriv,
+        amplitude_column="constant_1_column", duration_column="constant_1_column",
+        subset="onset > 0 and previous_cue_type == 'spatial' and flanker_type == 'congruent'",
+        demean_amp=False, cond_id='probe_spatial_congruent'
+    )
+    probe_spatial_incongruent, probe_spatial_incongruent_3col = make_regressor_and_derivative(
+        n_scans=n_scans, tr=tr, events_df=events_df, add_deriv=add_deriv,
+        amplitude_column="constant_1_column", duration_column="constant_1_column",
+        subset="onset > 0 and previous_cue_type == 'spatial' and flanker_type == 'incongruent'",
+        demean_amp=False, cond_id='probe_spatial_incongruent'
+    )
+
+    # version 2 regressors
+    # cue_double, cue_double_3col = make_regressor_and_derivative(
+    #     n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
+    #     amplitude_column="constant_1_column", duration_column="constant_0.5_column",
+    #     subset="onset > 0 and cue == 'double'", 
+    #     demean_amp=False, cond_id='cue_double'
+    # )
+    # cue_spatial, cue_spatial_3col = make_regressor_and_derivative(
+    #     n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
+    #     amplitude_column="constant_1_column", duration_column="constant_0.5_column",
+    #     subset="onset > 0 and cue == 'spatial'", 
+    #     demean_amp=False, cond_id='cue_spatial'
+    # )
+    # probe_congruent, probe_congruent_3col = make_regressor_and_derivative(
+    #     n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
+    #     amplitude_column="constant_1_column", duration_column="constant_1_column",
+    #     subset=subset_main_regressors + " and flanker_type == 'congruent'", 
+    #     demean_amp=False, cond_id='probe_congruent'
+    # )
+    # probe_incongruent, probe_incongruent_3col = make_regressor_and_derivative(
+    #     n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
+    #     amplitude_column="constant_1_column", duration_column="constant_1_column",
+    #     subset=subset_main_regressors + " and flanker_type == 'incongruent'", 
+    #     demean_amp=False, cond_id='probe_incongruent'
+    # )
+
+    # version 1 regressors
+    # cue_parametric, cue_parametric_3col = make_regressor_and_derivative(
+    #     n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
+    #     amplitude_column="cue_parametric", duration_column="constant_1_column",
+    #     subset=subset_main_regressors, demean_amp = True, cond_id = 'cue_parametric'
+    # )
+    # congruency_parametric, congruency_parametric_3col = make_regressor_and_derivative(
+    #     n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
+    #     amplitude_column="congruency_parametric", duration_column="constant_1_column",
+    #     subset=subset_main_regressors, demean_amp=True, cond_id='congruency_parametric'
+    # )
+    # cue_congruency_interaction, interaction_3col = make_regressor_and_derivative(
+    #     n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
+    #     amplitude_column="cue_congruency_interaction", duration_column="constant_1_column",
+    #     subset=subset_main_regressors, demean_amp=True, cond_id='interaction'
+    # )
+    # all_trials, all_trials_3col = make_regressor_and_derivative(
+    #     n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
+    #     amplitude_column="constant_1_column", duration_column="constant_1_column",
+    #     subset=subset_main_regressors, demean_amp=False, cond_id='task'
+    # )
+    #cue parametric at onset of cue
+    # cue_regressor, cue_3col = make_regressor_and_derivative(
+    #     n_scans=n_scans, tr=tr, events_df=events_df, add_deriv=add_deriv,
+    #     amplitude_column="constant_1_column", duration_column="constant_1_column",
+    #     subset="trial_id != 'stim' and onset > 0", demean_amp=False, cond_id='cue'
+    # )
+    design_matrix = pd.concat([
+        cue_double_congruent, cue_double_incongruent, cue_spatial_congruent, cue_spatial_incongruent,
+        probe_double_congruent, probe_double_incongruent, probe_spatial_congruent, probe_spatial_incongruent,
+        too_fast_regressor, omission_regressor, commission_regressor, confound_regressors
+    ], axis=1)
+    
+    too_fast_3col = rename_columns(too_fast_3col, 'too_fast')
+    omission_3col = rename_columns(omission_3col, 'omission')
+    commission_3col = rename_columns(commission_3col, 'commission')
+    cue_double_congruent_3col = rename_columns(cue_double_congruent_3col, 'cue_double_congruent')
+    cue_double_incongruent_3col = rename_columns(cue_double_incongruent_3col, 'cue_double_incongruent')
+    cue_spatial_congruent_3col = rename_columns(cue_spatial_congruent_3col, 'cue_spatial_congruent')
+    cue_spatial_incongruent_3col = rename_columns(cue_spatial_incongruent_3col, 'cue_spatial_incongruent')
+    probe_double_congruent_3col = rename_columns(probe_double_congruent_3col, 'probe_double_congruent')
+    probe_double_incongruent_3col = rename_columns(probe_double_incongruent_3col, 'probe_double_incongruent')
+    probe_spatial_congruent_3col = rename_columns(probe_spatial_congruent_3col, 'probe_spatial_congruent')
+    probe_spatial_incongruent_3col = rename_columns(probe_spatial_incongruent_3col, 'probe_spatial_incongruent')
+    
+    # Merge dataframes and ensure the correct columns are being used
+    design_matrix_3col = merge_dataframes(cue_double_congruent_3col, cue_double_incongruent_3col, 'cue_double_congruent', 'cue_double_incongruent')
+    design_matrix_3col = merge_dataframes(design_matrix_3col, cue_spatial_congruent_3col, 'cue_double_congruent', 'cue_spatial_congruent')
+    design_matrix_3col = merge_dataframes(design_matrix_3col, cue_spatial_incongruent_3col, 'cue_double_congruent', 'cue_spatial_incongruent')
+    design_matrix_3col = merge_dataframes(design_matrix_3col, probe_double_congruent_3col, 'cue_double_congruent', 'probe_double_congruent')
+    design_matrix_3col = merge_dataframes(design_matrix_3col, probe_double_incongruent_3col, 'cue_double_congruent', 'probe_double_incongruent')
+    design_matrix_3col = merge_dataframes(design_matrix_3col, probe_spatial_congruent_3col, 'cue_double_congruent', 'probe_spatial_congruent')
+    design_matrix_3col = merge_dataframes(design_matrix_3col, probe_spatial_incongruent_3col, 'cue_double_congruent', 'probe_spatial_incongruent')
+
+    # Optionally, sort the resulting dataframe by 'all_task_onset' for better clarity
+    design_matrix_3col.sort_values(by='cue_double_congruent_onset', inplace=True)
+
+    contrasts = {
+                    'cue_parametric': '0.25*(cue_double_congruent+cue_double_incongruent+probe_double_congruent+probe_double_incongruent)'+
+                    '-0.25*(cue_spatial_congruent+cue_spatial_incongruent+probe_spatial_congruent+probe_spatial_incongruent)',
+                    'congruency_parametric': '0.25*(cue_double_incongruent+cue_spatial_incongruent+probe_double_incongruent+probe_spatial_incongruent)'+
+                    '-0.25*(cue_double_congruent+cue_spatial_congruent+probe_double_congruent+probe_spatial_congruent)',
+                    'task': 'cue_double_congruent+cue_double_incongruent+cue_spatial_congruent+cue_spatial_incongruent'+
+                    '+probe_double_congruent+probe_double_incongruent+probe_spatial_congruent+probe_spatial_incongruent'
                 }
     if regress_rt == 'rt_centered':
         mn_rt = get_mean_rt('ANT')
         events_df['response_time_centered'] = events_df.response_time - mn_rt
-        rt = make_regressor_and_derivative(
-        n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
-        amplitude_column="response_time_centered", duration_column="constant_1_column",
-        subset=subset_main_regressors, demean_amp=False, cond_id='response_time'
-        ) 
-        design_matrix = pd.concat([design_matrix, rt], axis=1)
+        rt, rt_3col = make_regressor_and_derivative(
+            n_scans=n_scans, tr=tr, events_df=events_df, add_deriv=add_deriv,
+            amplitude_column="response_time_centered", duration_column="constant_1_column",
+            subset=subset_main_regressors, demean_amp=False, cond_id='response_time'
+        )
+        design_matrix = pd.concat([design_matrix, rt], axis=1)  # Use rt DataFrame here
         contrasts["response_time"] = "response_time"
+
     if regress_rt == 'rt_uncentered':
-        rt = make_regressor_and_derivative(
-        n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
-        amplitude_column="response_time", duration_column="constant_1_column",
-        subset=subset_main_regressors, demean_amp=False, cond_id='response_time'
-        ) 
-        design_matrix = pd.concat([design_matrix, rt], axis=1)
+        rt, rt_3col = make_regressor_and_derivative(
+            n_scans=n_scans, tr=tr, events_df=events_df, add_deriv=add_deriv,
+            amplitude_column="response_time", duration_column="constant_1_column",
+            subset=subset_main_regressors, demean_amp=False, cond_id='response_time'
+        )
+        design_matrix = pd.concat([design_matrix, rt], axis=1)  # Use rt DataFrame here
         contrasts["response_time"] = "response_time"
-    return design_matrix, contrasts, percent_junk, events_df
+    return design_matrix, contrasts, percent_junk, design_matrix_3col
 
 
 def make_basic_ccthot_desmat(events_file, add_deriv, regress_rt, 
@@ -320,7 +477,7 @@ def make_basic_ccthot_desmat(events_file, add_deriv, regress_rt,
     percent_junk = 0
     events_df['constant_1_column'] = 1  
     end_round_idx = events_df.index[events_df.trial_id == 'ITI']
-    # shift by 1 to next trial start, ignoring the last ITI
+    # shift by 1 to next trial start, ignoring the last feedback trial
     start_round_idx = [0] + [x+1 for x in end_round_idx[:-1]]
     assert len(end_round_idx) == len(start_round_idx)
     events_df['trial_start'] = False
@@ -331,18 +488,18 @@ def make_basic_ccthot_desmat(events_file, add_deriv, regress_rt,
             # Note, this automatically excludes the ITI row
         trial_durs.append(
             events_df.iloc[start_idx:end_idx]
-                            ['block_duration'].sum()
+                            ['duration'].sum()
         )
     events_df['trial_duration'] = np.nan
     events_df.loc[start_round_idx, 'trial_duration'] = trial_durs
     
-    all_task = make_regressor_and_derivative(
+    all_task, all_task_3col = make_regressor_and_derivative(
         n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
         amplitude_column="constant_1_column", duration_column="trial_duration",
         subset='trial_start==True and onset > 0', demean_amp=False, cond_id='task'
     )
     events_df['button_onset'] = events_df.onset+events_df.response_time
-    pos_draw = make_regressor_and_derivative(
+    pos_draw, pos_draw_3col = make_regressor_and_derivative(
         n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
         amplitude_column="EV", duration_column="constant_1_column",
         onset_column='button_onset',
@@ -350,20 +507,20 @@ def make_basic_ccthot_desmat(events_file, add_deriv, regress_rt,
         cond_id='positive_draw'
     )
     events_df['absolute_loss_amount'] = np.abs(events_df.loss_amount)
-    neg_draw = make_regressor_and_derivative(
+    neg_draw, neg_draw_3col = make_regressor_and_derivative(
         n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
         amplitude_column="absolute_loss_amount", duration_column="constant_1_column",
         onset_column='button_onset',
-        subset="action=='draw_card' and feedback==0 and onset > 0", demean_amp=True, 
+        subset="action=='draw_card' and clicked_on_loss_card==1 and onset > 0", demean_amp=True, 
         cond_id='negative_draw'
     )
-    trial_gain = make_regressor_and_derivative(
+    trial_gain, trial_gain_3col = make_regressor_and_derivative(
         n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
         amplitude_column="gain_amount", duration_column="trial_duration",
         subset="trial_start==True and gain_amount == gain_amount and onset > 0", demean_amp=True, 
         cond_id='trial_gain'
     )
-    trial_loss = make_regressor_and_derivative(
+    trial_loss, trial_loss_3col = make_regressor_and_derivative(
         n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
         amplitude_column="absolute_loss_amount", duration_column="trial_duration",
         subset="trial_start==True and onset > 0 and absolute_loss_amount == absolute_loss_amount", demean_amp=True, 
@@ -371,6 +528,21 @@ def make_basic_ccthot_desmat(events_file, add_deriv, regress_rt,
     )
     design_matrix = pd.concat([all_task, pos_draw, neg_draw, trial_gain, 
         trial_loss, confound_regressors], axis=1)
+
+    all_task_3col = rename_columns(all_task_3col, 'all_task')
+    pos_draw_3col = rename_columns(pos_draw_3col, 'pos_draw')
+    neg_draw_3col = rename_columns(neg_draw_3col, 'neg_draw')
+    trial_gain_3col = rename_columns(trial_gain_3col, 'trial_gain')
+    trial_loss_3col = rename_columns(trial_loss_3col, 'trial_loss')
+
+    design_matrix_3col = merge_dataframes(all_task_3col, pos_draw_3col, 'all_task', 'pos_draw')
+    design_matrix_3col = merge_dataframes(design_matrix_3col, neg_draw_3col, 'all_task', 'neg_draw')
+    design_matrix_3col = merge_dataframes(design_matrix_3col, trial_gain_3col, 'all_task', 'trial_gain')
+    design_matrix_3col = merge_dataframes(design_matrix_3col, trial_loss_3col, 'all_task', 'trial_loss')
+
+    # Optionally, sort the resulting dataframe by 'all_task_onset' for better clarity
+    design_matrix_3col.sort_values(by='all_task_onset', inplace=True)
+
     contrasts = {'task': 'task',
                 'trial_loss': 'trial_loss',
                 'trial_gain': 'trial_gain',
@@ -379,7 +551,7 @@ def make_basic_ccthot_desmat(events_file, add_deriv, regress_rt,
                 }
     if regress_rt != 'no_rt':
         print('RT cannot be modeled for this task')
-    return design_matrix, contrasts, percent_junk, events_df
+    return design_matrix, contrasts, percent_junk, design_matrix_3col
 
 
 def make_basic_stopsignal_desmat(events_file, add_deriv, 
@@ -599,79 +771,6 @@ def make_basic_watt3_desmat(events_file, add_deriv, regress_rt,
           rt_subset: Boolean for extracting correct rows of events_df in the case that 
               rt regressors are requeset.
     """
-    #events_df = pd.read_csv(events_file, sep = '\t')
-    #percent_junk = 0
-    #events_df['constant_1_column'] = 1  
-    #events_df['constant_3500ms_col'] = 3.5 * events_df['constant_1_column']
-    #events_df['constant_600ms_col'] = 0.6 * events_df['constant_1_column']
-    #events_df[['practice_main', 'with_without', 'not_using']] = \
-    #    events_df.condition.str.split(expand=True, pat='_')
-    #events_df.with_without = events_df.with_without.replace('without', -1)
-    #events_df.with_without = events_df.with_without.replace('with', 1)
-    #events_df.block_duration = events_df.block_duration/1000
- 
-    #planning_event = make_regressor_and_derivative(
-    #    n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
-    #    amplitude_column="constant_1_column", duration_column="constant_3500ms_col",
-    #    subset="planning==1 and practice_main == 'PA'", 
-    #    demean_amp=False, cond_id='planning_event'
-    #)
-    #planning_parametric = make_regressor_and_derivative(
-    #    n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
-    #    amplitude_column="with_without", duration_column="constant_3500ms_col",
-    #    subset="planning==1 and practice_main == 'PA'", 
-    #    demean_amp=True, cond_id='planning_parametric'
-    #)
-    #acting_event = make_regressor_and_derivative(
-    #    n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
-    #    amplitude_column="constant_1_column", duration_column="constant_600ms_col",
-    #    subset="planning==0 and practice_main == 'PA'", 
-    #    demean_amp=False, cond_id='acting_event'
-    #)
-    #acting_parametric = make_regressor_and_derivative(
-    #    n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
-    #    amplitude_column="with_without", duration_column="constant_600ms_col",
-    #    subset="planning==0 and trial_id!='feedback' and practice_main == 'PA'", 
-    #    demean_amp=True, cond_id='acting_parametric'
-    #)
-    #feedback = make_regressor_and_derivative(
-    #    n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
-    #    amplitude_column="constant_1_column", duration_column="block_duration",
-    #    subset="trial_id=='feedback' and practice_main == 'PA'", 
-    #    demean_amp=False, cond_id='feedback'
-    #)
-    # Practice starts here:
-    #acting_event_practice = make_regressor_and_derivative(
-    #    n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
-    #    amplitude_column="constant_1_column", duration_column="constant_600ms_col",
-    #    subset="planning==0 and practice_main == 'UA'", 
-    #    demean_amp=False, cond_id='acting_event_practice'
-    #)
-    #acting_parametric_practice = make_regressor_and_derivative(
-    #    n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
-    #    amplitude_column="with_without", duration_column="constant_600ms_col",
-    #    subset="planning==0 and trial_id!='feedback' and practice_main == 'UA'", 
-    #    demean_amp=True, cond_id='acting_parametric_practice'
-    #)
-    #feedback_practice = make_regressor_and_derivative(
-    #    n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
-    #    amplitude_column="constant_1_column", duration_column="block_duration",
-    #    subset="trial_id=='feedback' and practice_main == 'UA'", demean_amp=False, 
-    #    cond_id='feedback_practice'
-    #)
-    #design_matrix = pd.concat([planning_event, planning_parametric, acting_event, 
-    #    acting_parametric, feedback, acting_event_practice, 
-    #    acting_parametric_practice, feedback_practice, 
-    #    confound_regressors], axis=1)
-    #contrasts = {'planning_event':'planning_event', 
-    #             'planning_parametric':'planning_parametric',
-    #             'acting_event':'acting_event', 
-    #             'acting_parametric': 'acting_parametric',
-    #             'feedback':'feedback', 
-    #             'task': '.5*planning_event + .5*acting_event',
-    #             'task_parametric': '.5*planning_parametric + .5*acting_parametric'
-    #             }
-    
     events_df = pd.read_csv(events_file, sep = '\t')
     # no junk trial definition for this task
     percent_junk = 0
@@ -680,7 +779,7 @@ def make_basic_watt3_desmat(events_file, add_deriv, regress_rt,
         events_df.condition.str.split(expand=True, pat='_')
     events_df.with_without = events_df.with_without.replace('without', -1)
     events_df.with_without = events_df.with_without.replace('with', 1)
-    end_round_idx = events_df.index[events_df.trial_id == 'feedback']
+    end_round_idx = events_df.index[events_df.trial_id == 'ITI']
     # shift by 1 to next trial start, ignoring the last ITI
     start_round_idx = [0] + [x+1 for x in end_round_idx[:-1]]
     assert len(end_round_idx) == len(start_round_idx)
@@ -692,28 +791,38 @@ def make_basic_watt3_desmat(events_file, add_deriv, regress_rt,
             # Note, this automatically excludes the ITI row
         trial_durs.append(
             events_df.iloc[start_idx:end_idx]
-                            ['block_duration'].sum()
+                            ['duration'].sum()
         )
     events_df['trial_duration'] = np.nan
     events_df.loc[start_round_idx, 'trial_duration'] = trial_durs
     
-    all_task = make_regressor_and_derivative(
+    all_task, all_task_3col = make_regressor_and_derivative(
         n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
         amplitude_column="constant_1_column", duration_column="trial_duration",
         subset="trial_start==True and onset > 0 and practice_main == 'PA'", demean_amp=False, cond_id='task'
     )
-    task_parametric = make_regressor_and_derivative(
+    task_parametric, task_parametric_3col = make_regressor_and_derivative(
         n_scans=n_scans, tr=tr, events_df=events_df, add_deriv = add_deriv,
         amplitude_column="with_without", duration_column="trial_duration",
         subset="trial_start==True and onset > 0", demean_amp=True, cond_id='task_parametric'
     )
-    practice = make_regressor_and_derivative(
+    practice, practice_3col = make_regressor_and_derivative(
         n_scans=n_scans, tr=tr, events_df = events_df, add_deriv = add_deriv,
         amplitude_column="constant_1_column", duration_column="trial_duration",
         subset="trial_start==True and onset > 0 and practice_main == 'UA'", demean_amp=False, cond_id="practice"
     )
     
     design_matrix = pd.concat([all_task, task_parametric, practice, confound_regressors], axis=1)
+    all_task_3col = rename_columns(all_task_3col, 'all_task')
+    task_parametric_3col = rename_columns(task_parametric_3col, 'task_parametric')
+    practice_3col = rename_columns(practice_3col, 'practice')
+
+    design_matrix_3col = merge_dataframes(all_task_3col, task_parametric_3col, 'all_task', 'task_parametric')
+    design_matrix_3col = merge_dataframes(design_matrix_3col, practice_3col, 'all_task', 'practice')
+
+    # Optionally, sort the resulting dataframe by 'all_task_onset' for better clarity
+    design_matrix_3col.sort_values(by='all_task_onset', inplace=True)
+
     contrasts = {'task':'task',
                  'task_parametric':'task_parametric',
                  'practice':'practice'
@@ -721,7 +830,7 @@ def make_basic_watt3_desmat(events_file, add_deriv, regress_rt,
     
     if regress_rt != 'no_rt':
         print('RT cannot be modeled for this task')
-    return design_matrix, contrasts, percent_junk, events_df
+    return design_matrix, contrasts, percent_junk, design_matrix_3col
 
 
 def make_basic_discount_fix_desmat(events_file, add_deriv,

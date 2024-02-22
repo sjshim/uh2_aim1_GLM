@@ -289,7 +289,7 @@ def make_batch_file(outdir, model_lev2, lev1_task_contrast, batch_stub, num_subs
                         f' -f {outdir}/desmat.fts -T -n 5000 \n'
                         f'ttoz {filename_input_root}_mask.nii.gz '
                         f'{outdir}/randomise_output_model_{model_lev2}_tstat1.nii.gz '
-                        f'{num_subs -1} -zout {outdir}/randomise_output_model_{model_lev2}_stat1.nii.gz')
+                        f'{num_subs -1} -zout {outdir}/randomise_output_model_{model_lev2}_zstat.nii.gz')
     else:
         randomise_call = (f'randomise -i {filename_input_root}.nii.gz'
                         f' -o {outdir}/randomise_output_model_{model_lev2} '
@@ -526,7 +526,7 @@ if __name__ == "__main__":
     root = '/oak/stanford/groups/russpold/data/uh2/aim1/BIDS'
     task, lev1_contrast, rtmodel =  lev1_task_contrast.split(':')
 
-    outdir = Path(f"/oak/stanford/groups/russpold/data/uh2/aim1/BIDS/derivatives/output_CSF-no_motion-no/"
+    outdir = Path(f"/oak/stanford/groups/russpold/data/uh2/aim1/BIDS/derivatives/output/"
               f"{task}_lev2_output/{task}_lev1_contrast_{lev1_contrast}_rtmodel_{rtmodel}_"
               f"lev2_model_{model_lev2}/")
     if outdir.exists() and outdir.is_dir():

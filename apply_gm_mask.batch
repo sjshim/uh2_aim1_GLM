@@ -1,0 +1,20 @@
+#!/bin/bash
+##
+#SBATCH --job-name=apply_gm_mask
+#SBATCH --output=log/apply_gm_mask.out
+#SBATCH --error=log/apply_gm_mask.err
+#SBATCH --time=2:00:00
+#SBATCH -p russpold,hns
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=16
+#SBATCH --mem-per-cpu=8G
+# Outputs ---------------------------------
+#SBATCH --mail-user=sjshim@stanford.edu
+#SBATCH --mail-type=END
+# ------------------------------------------
+
+. ${HOME}/.bashrc  
+
+conda activate fmri_analysis
+
+python apply_gm_mask.py

@@ -26,7 +26,7 @@ def get_behav_exclusion(subid, task):
     behav_exclusion['subid_task'] = behav_exclusion['subid_task'].map(lambda x: x.lstrip('s'))
     behav_exclusion['subid_task'] = behav_exclusion['subid_task'].str.replace('WATT', 'WATT3')
     behav_exclusion_this_sub = behav_exclusion[behav_exclusion['subid_task'].str.contains(f'{subid}_{task}')]
-    print(behav_exclusion_this_sub.columns)
+
     if behav_exclusion_this_sub.empty:
         behav_exclusion_this_sub = pd.DataFrame((np.atleast_2d([f'{subid}_{task}']+ [0]*9)), 
             columns = list(behav_exclusion_this_sub.columns))   
@@ -79,16 +79,16 @@ def qa_design_matrix(contrast_dir, contrasts, desmat, subid, task, percent_junk,
     bad_columns = list(checked_columns_fail.index[checked_columns_fail.values])
     bad_columns = '_and_'.join(str(x) for x in bad_columns)
  
-    #num_trs = desmat.shape[0]
+    num_trs = desmat.shape[0]
 
     failures = {'subid_task': f'{subid}_{task}',
                 'percent_junk_gt_45': [percent_junk if percent_junk > .45 else 0],
                 'percent_scrub_gt_20': [percent_high_motion if percent_high_motion > .2 else 0],
-                #f'num_trs_lt_{num_time_point_cutoff[task]}': [num_trs if num_trs < num_time_point_cutoff[task] else 0],
+                f'num_trs_lt_{num_time_point_cutoff[task]}': [num_trs if num_trs < num_time_point_cutoff[task] else 0],
                 'task_related_regressor_all_zeros': bad_columns if any_column_fail else [0]}
     failures = pd.DataFrame(failures)
     all_exclusion = pd.merge(behav_exclusion_this_sub, failures)
-    any_fail = all_exclusion.loc[:, all_exclusion.columns != 'subid_task'].ne(0).any(1).bool()
+    any_fail = all_exclusion.loc[:, all_exclusion.columns != 'subid_task'].ne(0).any(axis=1).bool()
     if any_fail:
         update_excluded_subject_csv(all_exclusion, subid, task, contrast_dir)
     return all_exclusion, any_fail

@@ -9,9 +9,9 @@ def get_subids(root):
     return subid
 
 
-tasks = ['stroop', 'ANT',  'stopSignal', 'twoByTwo',
-                'discountFix', 'DPX', 'motorSelectiveStop']
-
+# tasks = ['stroop', 'ANT',  'CCTHot', 'stopSignal', 'twoByTwo',
+#         'WATT3', 'discountFix', 'DPX', 'motorSelectiveStop']
+tasks = ['ANT']
 
 
 batch_stub = ('/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code'
@@ -29,7 +29,7 @@ rt_mapping = {
     'WATT3': ['no_rt'],
     'discountFix': ['rt_centered'], 
     'DPX': ['rt_centered'], 
-    'motorSelectiveStop': [ 'rt_centered']
+    'motorSelectiveStop': ['rt_centered']
 }
 # rt_mapping = {
 #     'stroop': ['no_rt'],
@@ -46,8 +46,8 @@ rt_mapping = {
 subids = get_subids(root)
 
 for task in tasks:
-    batch_root = Path(f'/oak/stanford/groups/russpold/data/uh2/aim1/BIDS/'
-                      f'derivatives/output_CSF-no_motion-no/{task}_lev1_output/batch_files/')
+    batch_root = Path(f'/oak/stanford/groups/russpold/data/uh2/aim1/'
+                      f'derivatives/output_ANT_noderivs/{task}_lev1_output/batch_files/')
     batch_root.mkdir(parents=True, exist_ok=True)
     rt_options = rt_mapping[task]
     for rt_inc in rt_options:
@@ -59,7 +59,8 @@ for task in tasks:
             for sub in subids:
                 outfile.write(
                     f"echo /oak/stanford/groups/russpold/data/uh2/aim1/"
-                    f"analysis_code/analyze_lev1.py {task} {sub} {rt_inc} --simplified_events \n"
+                    f"analysis_code/analyze_lev1.py {task} {sub} {rt_inc} --simplified_events --omit_deriv \n"
                     f"/oak/stanford/groups/russpold/data/uh2/aim1/"
-                    f"analysis_code/analyze_lev1.py {task} {sub} {rt_inc} --simplified_events \n")
+                    f"analysis_code/analyze_lev1.py {task} {sub} {rt_inc} --simplified_events --omit_deriv \n")
+
 print('Done!')

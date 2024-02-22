@@ -9,32 +9,39 @@ import os
 from argparse import ArgumentParser, RawTextHelpFormatter
 from utils_lev1.qa import update_excluded_subject_csv, qa_design_matrix, add_to_html_summary
 
-def get_confounds_data(confounds_file):
+
+def get_confounds_aroma_nonaggr_data(confounds_file):
     """
-    Creates nuisance regressors for output from fmriprep.
+    Creates nuisance regressors for the nonaggressive denoised AROMA output
+      from fmriprep.
     input:
-        confounds_file: path to confounds file from fmriprep
+      confounds_file: path to confounds file from fmriprep
     output:
-        confound_regressors: includes motion regressors, FD, nonsteady volumes,
-            cosine basis set
-        percent_high_motion:  Percentage of high motion time points.  High motion
-            is defined by the following
-            FD>.5, stdDVARS>1.2 (that relates to DVARS>.5)
+      confound_regressors: includes WM, CSF, dummies to model nonsteady volumes
+                           as they are not smoothed, cosine basis set (req with
+                           AROMA use)
+      percent_high_motion:  Percentage of high motion time points.  High motion
+                            is defined by the following
+                            FD>.5, stdDVARS>1.2 (that relates to DVARS>.5)
     """
     confounds_df = pd.read_csv(confounds_file, sep='\t',
-                            na_values=['n/a']).fillna(0)
+                               na_values=['n/a']).fillna(0)
     excessive_movement = (confounds_df.framewise_displacement > .5) | \
-                        (confounds_df.std_dvars > 1.2)
-    percent_high_motion = np.mean(excessive_movement) 
-    confounds = confounds_df.filter(regex='non_steady|cosine' 
+                         (confounds_df.std_dvars > 1.2)
+    percent_high_motion = np.mean(excessive_movement)
+
+    # confounds = confounds_df.filter(regex='non_steady|cosine|^csf$|^white_matter$').copy()
+
+    # something like the following could be used for motion regressors?
+    confounds = confounds_df.filter(regex='non_steady|cosine|framewise_displacement' 
                                     '|trans_x$|trans_x_derivative1$|trans_x_power2$|trans_x_derivative1_power2$'
                                     '|trans_y$|trans_y_derivative1$|trans_y_power2$|trans_y_derivative1_power2$'
                                     '|trans_z$|trans_z_derivative1$|trans_z_power2$|trans_z_derivative1_power2$'
                                     '|rot_x$|rot_x_derivative1$|rot_x_power2$|rot_x_derivative1_power2$'
                                     '|rot_y$|rot_y_derivative1$|rot_y_power2$|rot_y_derivative1_power2$'
                                     '|rot_z$|rot_z_derivative1$|rot_z_power2$|rot_z_derivative1_power2$').copy()
-
     return confounds, percent_high_motion
+
 
 def get_nscans(timeseries_data_file):
     """
@@ -56,7 +63,7 @@ def get_tr(root, task):
         task: Task name
     output: TR as reported in json file (presumable in s)
     """
-    json_file = glob.glob(f'{root}/BIDS/*{task}_bold.json')[0]
+    json_file = glob.glob(f'{root}/*{task}_bold.json')[0]
     with open(json_file, "rb") as f:
         task_info = json.load(f)
     tr = task_info['RepetitionTime']
@@ -85,7 +92,7 @@ def make_desmat_contrasts(root, task, events_file,
     """
     from utils_lev1.first_level_designs import make_task_desmat_fcn_dict
     if confounds_file is not None:
-        confound_regressors, percent_high_motion = get_confounds_data(confounds_file)
+        confound_regressors, percent_high_motion = get_confounds_aroma_nonaggr_data(confounds_file)
     else:
         confound_regressors = None
     
@@ -119,7 +126,7 @@ def check_file(glob_out):
     return file, file_missing
 
 
-def get_files(root, subid, task):
+def get_files(root, derivatives, subid, task):
     """Fetches files (events.tsv, confounds, mask, data) 
        if files are not present, excluded_subjects.csv is updated and 
        program exits
@@ -137,21 +144,20 @@ def get_files(root, subid, task):
     file_missing = {}
     file_missing['subid_task'] = f'{subid}_{task}'
     files['events_file'], file_missing['event_file_missing'] = check_file(glob.glob(
-        f'{root}/BIDS/sub-s{subid}/ses-[0-9]/func/*{task}*tsv'
+        f'{root}/sub-s{subid}/ses-[0-9]/func/*{task}*tsv'
     ))
     files['confounds_file'], file_missing['confounds_file_missing'] =  check_file(glob.glob(
-        f'{root}/derivatives/fmriprep/sub-s{subid}/ses-[0-9]/func/*{task}*confounds*.tsv'
+        f'{derivatives}/fmriprep/sub-s{subid}/ses-[0-9]/func/*{task}*confounds*.tsv'
     ))
-
     files['mask_file'], file_missing['mask_file_missing'] = check_file(glob.glob(
-        f'{root}/derivatives/fmriprep/sub-s{subid}/ses-[0-9]/func/*{task}*space-MNI152NLin2009cAsym*mask*.nii.gz'
+        f'{derivatives}/fmriprep/sub-s{subid}/ses-[0-9]/func/*{task}*space-MNI152NLin2009cAsym*mask*.nii.gz'
     ))
     files['data_file'], file_missing['data_file_missing'] = check_file(glob.glob(
     # f'{root}/derivatives/fmriprep/sub-s{subid}/ses-[0-9]/func/*{task}*AROMA*_bold.nii.gz'
-    f'{root}/derivatives/fmriprep/sub-s{subid}/ses-[0-9]/func/*{task}*space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz'
+    f'{derivatives}/fmriprep/sub-s{subid}/ses-[0-9]/func/*{task}*space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz'
     ))
     file_missing = pd.DataFrame(file_missing)
-    if file_missing.loc[:, file_missing.columns != 'subid_task'].gt(0).any(axis=1).bool():
+    if file_missing.loc[:, file_missing.columns != 'subid_task'].gt(0).any().any():
         update_excluded_subject_csv(file_missing, subid, task, contrast_dir)
         print(f'Subject {subid}, task: {task} is missing one or more input data files.')
         sys.exit(0)
@@ -216,52 +222,50 @@ if __name__ == "__main__":
         add_deriv = 'deriv_yes'
     
     outdir = (f'/oak/stanford/groups/russpold/data/uh2/aim1/derivatives/'
-        f'output_ANT_noderivs/{task}_lev1_output/')
-    root = '/oak/stanford/groups/russpold/data/uh2/aim1/'
+        f'output/{task}_lev1_output/')
+    root = '/oak/stanford/groups/russpold/data/uh2/aim1/BIDS'
+    derivatives = '/oak/stanford/groups/russpold/data/uh2/aim1/derivatives'
     contrast_dir = (f'{outdir}/task_{task}_rtmodel_{regress_rt}')
     if not os.path.exists(contrast_dir):
         os.makedirs(outdir, exist_ok=True)
         os.makedirs(f'{contrast_dir}/contrast_estimates')
 
-    files = get_files(root, subid, task)
+    files = get_files(root, derivatives, subid, task)
 
     n_scans = get_nscans(files['data_file'])
     
     design_matrix, contrasts, percent_junk, percent_high_motion, tr, events_df = make_desmat_contrasts(root, task, 
         files['events_file'], add_deriv, n_scans, files['confounds_file'], regress_rt
     )
-    design_matrix['constant']=1    
+    
     if simplified_events:
         if not os.path.exists(f'{contrast_dir}/simplified_events'):
             os.makedirs(f'{contrast_dir}/simplified_events')
         simplified_filename = f'{contrast_dir}/simplified_events/sub-{subid}_task-{task}_simplified-events.csv'
-        events_df.to_csv(simplified_filename)
+        #events_df.to_csv(simplified_filename)
         design_matrix.to_csv(simplified_filename.replace('simplified-events', 'design-matrix'))
 
-    exclusion, any_fail = qa_design_matrix(
-        contrast_dir, contrasts, design_matrix, subid, task, percent_junk, 
-        percent_high_motion)
+    # exclusion, any_fail = qa_design_matrix(
+    #     contrast_dir, contrasts, design_matrix, subid, task, percent_junk, 
+    #     percent_high_motion)
 
-    add_to_html_summary(subid, contrasts, design_matrix, contrast_dir, 
-            regress_rt, task, any_fail, exclusion)
-    if any_fail:
-        print(f'QA failed for subject {subid}, task: {task}.  See QA html file for details.')
-        sys.exit(0)
-    if not any_fail and qa_only == False:
-        fmri_glm = FirstLevelModel(tr,
-                                    subject_label=subid,
-                                    mask_img=files['mask_file'],
-                                    noise_model='ar1',
-                                    standardize=False,
-                                    drift_model=None,
-                                    smoothing_fwhm=5
-                                    )
-    
-        out = fmri_glm.fit(files['data_file'], design_matrices = design_matrix)
 
-        for con_name, con in contrasts.items():
-            filename = (f'{contrast_dir}/contrast_estimates/task_{task}_contrast_{con_name}_sub_'
-                f'{subid}_rtmodel_{regress_rt}_stat'
-                f'_contrast.nii.gz')
-            con_est  = out.compute_contrast(con, output_type = 'effect_size')
-            con_est.to_filename(filename)
+    # add_to_html_summary(subid, contrasts, design_matrix, contrast_dir, 
+    #         regress_rt, task, any_fail, exclusion)
+
+    # if not any_fail and qa_only == False:
+    #     fmri_glm = FirstLevelModel(tr,
+    #                                 subject_label=subid,
+    #                                 mask_img=files['mask_file'],
+    #                                 noise_model='ar1',
+    #                                 standardize=False,
+    #                                 drift_model=None
+    #                                 )
+    #     out = fmri_glm.fit(files['data_file'], design_matrices = design_matrix)
+
+    #     for con_name, con in contrasts.items():
+    #         filename = (f'{contrast_dir}/contrast_estimates/task_{task}_contrast_{con_name}_sub_'
+    #             f'{subid}_rtmodel_{regress_rt}_stat'
+    #             f'_contrast.nii.gz')
+    #         con_est  = out.compute_contrast(con, output_type = 'effect_size')
+    #         con_est.to_filename(filename)

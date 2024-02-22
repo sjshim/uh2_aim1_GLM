@@ -10,22 +10,22 @@
 #SBATCH --mem-per-cpu=8G
 # Outputs ---------------------------------
 #SBATCH --mail-user=poldracklab@stanford.edu
-#SBATCH --mail-type=ALL
+#SBATCH --mail-type=END
 # ------------------------------------------
 
 . ${HOME}/.bashrc  
 conda activate fmri_analysis
 
-echo /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py ANT:congruency_parametric:rt_centered one_sampt
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py ANT:congruency_parametric:rt_centered one_sampt
-echo /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py ANT:cue_parametric:rt_centered one_sampt
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py ANT:cue_parametric:rt_centered one_sampt
-echo /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py ANT:interaction:rt_centered one_sampt
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py ANT:interaction:rt_centered one_sampt
-echo /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py ANT:response_time:rt_centered one_sampt
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py ANT:response_time:rt_centered one_sampt
-echo /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py ANT:task:rt_centered one_sampt
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py ANT:task:rt_centered one_sampt
+# echo /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py ANT:congruency_parametric:rt_centered one_sampt
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py ANT:congruency_parametric:rt_centered one_sampt
+# echo /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py ANT:cue_parametric:rt_centered one_sampt
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py ANT:cue_parametric:rt_centered one_sampt
+# echo /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py ANT:interaction:rt_centered one_sampt
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py ANT:interaction:rt_centered one_sampt
+# echo /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py ANT:response_time:rt_centered one_sampt
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py ANT:response_time:rt_centered one_sampt
+# echo /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py ANT:task:rt_centered one_sampt
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py ANT:task:rt_centered one_sampt
 echo /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py CCTHot:negative_draw:no_rt one_sampt
 /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py CCTHot:negative_draw:no_rt one_sampt
 echo CCTHot:positive_draw
@@ -36,103 +36,103 @@ echo CCTHot:trial_gain
 /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py CCTHot:trial_gain:no_rt one_sampt
 echo CCTHot:trial_loss
 /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py CCTHot:trial_loss:no_rt one_sampt
-echo DPX:AX
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py DPX:AX:rt_centered one_sampt
-echo DPX:AY-BY
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py DPX:AY-BY:rt_centered one_sampt
-echo DPX:AY
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py DPX:AY:rt_centered one_sampt
-echo DPX:BX-BY
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py DPX:BX-BY:rt_centered one_sampt
-echo DPX:BX
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py DPX:BX:rt_centered one_sampt
-echo DPX:BY
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py DPX:BY:rt_centered one_sampt
-echo DPX:response_time
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py DPX:response_time:rt_centered one_sampt
-echo DPX:task
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py DPX:task:rt_centered one_sampt
+# echo DPX:AX
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py DPX:AX:rt_centered one_sampt
+# echo DPX:AY-BY
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py DPX:AY-BY:rt_centered one_sampt
+# echo DPX:AY
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py DPX:AY:rt_centered one_sampt
+# echo DPX:BX-BY
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py DPX:BX-BY:rt_centered one_sampt
+# echo DPX:BX
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py DPX:BX:rt_centered one_sampt
+# echo DPX:BY
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py DPX:BY:rt_centered one_sampt
+# echo DPX:response_time
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py DPX:response_time:rt_centered one_sampt
+# echo DPX:task
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py DPX:task:rt_centered one_sampt
 echo WATT3:practice
 /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py WATT3:practice:no_rt one_sampt
 echo WATT3:task_parametric
 /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py WATT3:task_parametric:no_rt one_sampt
 echo WATT3:task
 /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py WATT3:task:no_rt one_sampt
-echo discount:choice
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py discountFix:choice:rt_centered one_sampt
-echo discount:RT
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py discountFix:response_time:rt_centered one_sampt
-echo discount:task
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py discountFix:task:rt_centered one_sampt
-echo motor:crit_go-noncrit_nosignal
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py motorSelectiveStop:crit_go-noncrit_nosignal:rt_centered one_sampt
-echo motor:crit_go
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py motorSelectiveStop:crit_go:rt_centered one_sampt
-echo motor:crit_stop_failure-crit_go
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py motorSelectiveStop:crit_stop_failure-crit_go:rt_centered one_sampt
-echo motor:crit_stop_failure-noncrit_signal
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py motorSelectiveStop:crit_stop_failure-noncrit_signal:rt_centered one_sampt
-echo motor:crit_stop_failure
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py motorSelectiveStop:crit_stop_failure:rt_centered one_sampt
-echo motor:crit_stop_success-crit_go
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py motorSelectiveStop:crit_stop_success-crit_go:rt_centered one_sampt
-echo motor:crit_stop_success-crit_stop_failure
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py motorSelectiveStop:crit_stop_success-crit_stop_failure:rt_centered one_sampt
-echo motor:crit_stop_success-noncrit_signal
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py motorSelectiveStop:crit_stop_success-noncrit_signal:rt_centered one_sampt
-echo motor:crit_stopsuccess
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py motorSelectiveStop:crit_stop_success:rt_centered one_sampt
-echo motor:noncrit_nosignal
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py motorSelectiveStop:noncrit_nosignal:rt_centered one_sampt
-echo motor:noncrit_signal-noncrit_nosignal
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py motorSelectiveStop:noncrit_signal-noncrit_nosignal:rt_centered one_sampt
-echo motor:noncrit_signal
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py motorSelectiveStop:noncrit_signal:rt_centered one_sampt
-echo motor:response_time
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py motorSelectiveStop:response_time:rt_centered one_sampt
-echo motor:task
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py motorSelectiveStop:task:rt_centered one_sampt
-echo stopSignal:go
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py stopSignal:go:rt_centered one_sampt
-echo stopSignal:response_time
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py stopSignal:response_time:rt_centered one_sampt
-echo stopSignal:stop_failure-go
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py stopSignal:stop_failure-go:rt_centered one_sampt
-echo stopSignal:stop_failure-stop_success
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py stopSignal:stop_failure-stop_success:rt_centered one_sampt
-echo stopSignal:stop_failure
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py stopSignal:stop_failure:rt_centered one_sampt
-echo stopSignal:stop_success-go
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py stopSignal:stop_success-go:rt_centered one_sampt
-echo stopSignal:stop_success-stop_failure
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py stopSignal:stop_success-stop_failure:rt_centered one_sampt
-echo stopSignal:stop_success
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py stopSignal:stop_success:rt_centered one_sampt
-echo stopSignal:task
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py stopSignal:task:rt_centered one_sampt
-echo stroop:response_time
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py stroop:response_time:rt_centered one_sampt
-echo stroop:stroop_cong_v_baseline
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py stroop:stroop_cong_v_baseline:rt_centered one_sampt
-echo stroop:stroop_incong_minus_cong
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py stroop:stroop_incong_minus_cong:rt_centered one_sampt
-echo stroop:stroop_incong_v_baseline
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py stroop:stroop_incong_v_baseline:rt_centered one_sampt
-echo stroop:task
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py stroop:task:rt_centered one_sampt
-echo twoByTwo:cue_switch_cost
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py twoByTwo:cue_switch_cost:rt_centered one_sampt
-echo twoByTwo:cue_switch_cost_100
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py twoByTwo:cue_switch_cost_100:rt_centered one_sampt
-echo twoByTwo:cue_switch_cost_900
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py twoByTwo:cue_switch_cost_900:rt_centered one_sampt
-echo twoByTwo:response_time
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py twoByTwo:response_time:rt_centered one_sampt
-echo twoByTwo:task
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py twoByTwo:task:rt_centered one_sampt
-echo twoByTwo:task_switch_cost
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py twoByTwo:task_switch_cost:rt_centered one_sampt
-echo twoByTwo:task_switch_cost_100
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py twoByTwo:task_switch_cost_100:rt_centered one_sampt
-echo twoByTwo:task_switch_cost_900
-/oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py twoByTwo:task_switch_cost_900:rt_centered one_sampt
+# echo discount:choice
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py discountFix:choice:rt_centered one_sampt
+# echo discount:RT
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py discountFix:response_time:rt_centered one_sampt
+# echo discount:task
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py discountFix:task:rt_centered one_sampt
+# echo motor:crit_go-noncrit_nosignal
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py motorSelectiveStop:crit_go-noncrit_nosignal:rt_centered one_sampt
+# echo motor:crit_go
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py motorSelectiveStop:crit_go:rt_centered one_sampt
+# echo motor:crit_stop_failure-crit_go
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py motorSelectiveStop:crit_stop_failure-crit_go:rt_centered one_sampt
+# echo motor:crit_stop_failure-noncrit_signal
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py motorSelectiveStop:crit_stop_failure-noncrit_signal:rt_centered one_sampt
+# echo motor:crit_stop_failure
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py motorSelectiveStop:crit_stop_failure:rt_centered one_sampt
+# echo motor:crit_stop_success-crit_go
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py motorSelectiveStop:crit_stop_success-crit_go:rt_centered one_sampt
+# echo motor:crit_stop_success-crit_stop_failure
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py motorSelectiveStop:crit_stop_success-crit_stop_failure:rt_centered one_sampt
+# echo motor:crit_stop_success-noncrit_signal
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py motorSelectiveStop:crit_stop_success-noncrit_signal:rt_centered one_sampt
+# echo motor:crit_stopsuccess
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py motorSelectiveStop:crit_stop_success:rt_centered one_sampt
+# echo motor:noncrit_nosignal
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py motorSelectiveStop:noncrit_nosignal:rt_centered one_sampt
+# echo motor:noncrit_signal-noncrit_nosignal
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py motorSelectiveStop:noncrit_signal-noncrit_nosignal:rt_centered one_sampt
+# echo motor:noncrit_signal
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py motorSelectiveStop:noncrit_signal:rt_centered one_sampt
+# echo motor:response_time
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py motorSelectiveStop:response_time:rt_centered one_sampt
+# echo motor:task
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py motorSelectiveStop:task:rt_centered one_sampt
+# echo stopSignal:go
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py stopSignal:go:rt_centered one_sampt
+# echo stopSignal:response_time
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py stopSignal:response_time:rt_centered one_sampt
+# echo stopSignal:stop_failure-go
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py stopSignal:stop_failure-go:rt_centered one_sampt
+# echo stopSignal:stop_failure-stop_success
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py stopSignal:stop_failure-stop_success:rt_centered one_sampt
+# echo stopSignal:stop_failure
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py stopSignal:stop_failure:rt_centered one_sampt
+# echo stopSignal:stop_success-go
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py stopSignal:stop_success-go:rt_centered one_sampt
+# echo stopSignal:stop_success-stop_failure
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py stopSignal:stop_success-stop_failure:rt_centered one_sampt
+# echo stopSignal:stop_success
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py stopSignal:stop_success:rt_centered one_sampt
+# echo stopSignal:task
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py stopSignal:task:rt_centered one_sampt
+# echo stroop:response_time
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py stroop:response_time:rt_centered one_sampt
+# echo stroop:stroop_cong_v_baseline
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py stroop:stroop_cong_v_baseline:rt_centered one_sampt
+# echo stroop:stroop_incong_minus_cong
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py stroop:stroop_incong_minus_cong:rt_centered one_sampt
+# echo stroop:stroop_incong_v_baseline
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py stroop:stroop_incong_v_baseline:rt_centered one_sampt
+# echo stroop:task
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py stroop:task:rt_centered one_sampt
+# echo twoByTwo:cue_switch_cost
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py twoByTwo:cue_switch_cost:rt_centered one_sampt
+# echo twoByTwo:cue_switch_cost_100
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py twoByTwo:cue_switch_cost_100:rt_centered one_sampt
+# echo twoByTwo:cue_switch_cost_900
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py twoByTwo:cue_switch_cost_900:rt_centered one_sampt
+# echo twoByTwo:response_time
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py twoByTwo:response_time:rt_centered one_sampt
+# echo twoByTwo:task
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py twoByTwo:task:rt_centered one_sampt
+# echo twoByTwo:task_switch_cost
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py twoByTwo:task_switch_cost:rt_centered one_sampt
+# echo twoByTwo:task_switch_cost_100
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py twoByTwo:task_switch_cost_100:rt_centered one_sampt
+# echo twoByTwo:task_switch_cost_900
+# /oak/stanford/groups/russpold/data/uh2/aim1/analysis_code/analyze_lev2.py twoByTwo:task_switch_cost_900:rt_centered one_sampt
